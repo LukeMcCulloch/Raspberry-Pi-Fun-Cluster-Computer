@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<!-- Kissmetrics: They recommend placement right after opening head -->
+<script src='/javascripts/kissmetrics.js'></script>
+ 
+<title>Basho | Building a Riak Cluster on Raspberry Pi</title>
+
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+<link rel="shortcut icon" href="/favicon.ico"/>
+
+<link href="/stylesheet/custom.css" rel="stylesheet" type="text/css" media="screen"/>
+<link href="/stylesheet/code.css" rel="stylesheet" type="text/css" media="screen"/>
+<link href="/stylesheet/jquery.fancybox.css" rel="stylesheet" type="text/css" media="screen" />
+
+
+<!--[if lte IE 8]>
+  <link rel="stylesheet" type="text/css" href="/stylesheet/ie8.css" media="screen" />
+<![endif]-->
+
+
+</head>
+
+<body class="page">
+
+<div id="wrapper" class="gothic">
+
+    <div id="header-container">
+    <div id="header" class="col-full">
+
+      <div id="logo">
+        <a href="/"><img src="/images/logo.png" alt="Basho Technologies" /></a>
+      </div>
+
+      <div id="top-search" class="fr">
+        <a class="japan-link" href="http://www.basho.co.jp"></a>
+        <div class="search_main field-wrapper-mid">
+          <form method="get" class="searchform" action="/search/" >
+            <input type="text" id="header-search" class="field s" name="q" placeholder="Search..." />
+            <input type="image" src="/images/ico-search.png" class="search-submit" name="submit" alt="Go" />
+          </form>
+          <div class="fix"></div>
+        </div>
+        <div class="cb"></div>
+      </div>
+
+      <div id="navigation" class="fr cr">
+        <ul id="main-nav" class="nav fl">
+          <li id="nav-products"><a title="Basho Products" href="/products/riak-overview/">Products</a></li>
+          <li id="nav-services"><a title="Basho Services" href="/services/services-overview">Services</a></li>
+          <li id="nav-technology"><a title="About Basho's Technology" href="/technology/why-use-riak/">Technology</a></li>
+          <li id="nav-resources"><a title="Riak Downloads" href="/resources/downloads/">Downloads</a></li>
+          <li id="nav-community"><a title="Basho and Riak Community" href="/community/">Community</a></li>
+          <li id="nav-blog" class="current-menu-item"><a title="Basho Blog" href="/blog/">Blog</a></li>
+          <li id="nav-company"><a title="About Basho Technologies" href="/company/about-basho/">Company</a></li>
+          <li id="nav-contact"><a title="Contact Basho Technologies" href="/contact" class="">Contact</a></li>
+        </ul>
+      </div>
+      
+      <div class="cb"></div>
+
+    </div>
+  </div>
+
+
+  <div id="content" class="page col-full">
+    <div id="inner" class="col-full">
+    
+      <div id="sidebar" class="fl">
+        <div class="primary">
+          <div id="nav_menu-11" class="widget widget_nav_menu">
+            <h3>Blog</h3>
+<div id="blogmenu" class="textwidget">
+  <ul>
+    <li class="feedlink"><a id="subscription" href="http://www.basho.com/blog/technical/feed.xml" title="Basho Blog" type="application/rss+xml"><img alt="" src="/images/feedlink.png" />Subscribe</a></li>
+    <li class=''><a href='/blog'>All Posts</a></li>
+    
+    
+  </ul>
+</div>
+
+          </div> <!-- Nav menu 11 and widget -->
+			<div class="clipboard">
+				<span class="clipboardEmbedButton" data-theme="light" data-logo-style="default" data-type="shortLabel" data-start="#inner" data-end="#inner:after" data-url="http://basho.com/blog" data-title="Basho Blog" data-annotation="The best damn blog on the internet"></span>			
+			</div>	<!-- Clipboard embed code -->
+                    <div id="text-6" class="widget widget_text">
+            <h3>Sales</h3>
+            <div class="textwidget">
+              <ul>
+                <li>
+                  <img src="/images/mail-icon.gif" alt="" />
+                  <a title="Contact Us" href="/contact" class="">&nbsp; Contact Us</a>
+                </li>
+                <li>
+                  &nbsp;<img class="fl" src="/images/phone-icon.gif" alt="Basho Phone Number" />
+                  <span class="block fl">&nbsp;&nbsp;(571) 732-2800</span>
+                  <div class="cb"></div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    
+      <div id="main" class="fl">
+        <div id="title-container" class="col-full">
+          <h1 class="title">Building a Riak Cluster on Raspberry Pi</h1>
+        </div>
+        <div class="">
+          <div class="entry">
+            <p><strong>November 1, 2012</strong> </p>
+
+<p>Erlang was created to run on a variety of systems. Riak (written in Erlang) was created as a fault-tolerant distributed datastore, able to run on commodity hardware. Raspberry Pi is the culmination of these two points, brought to an absurd level: an embedded(ish), very inexpensive ($35) commodity computer. I thought it might be fun to create a Riak cluster on a set of Pis I had lying around.</p>
+
+<p>Here’s what you’ll need to build your own RiakPi cluster:</p>
+
+<ul>
+  <li><strong>N</strong> Raspberry Pis</li>
+  <li><strong>N</strong> SD card, 4+ GB</li>
+  <li><strong>N</strong> CAT5 cables</li>
+  <li><strong>N</strong> 5V, 700-1200 mA micro USB powersource (the kind used by many cellphones)</li>
+  <li><strong>1</strong> really cheap, non-fancy USB keyboard</li>
+  <li><strong>1</strong> monitor/tv with HDMI input</li>
+  <li><strong>1</strong> HDMI cable</li>
+  <li><strong>1</strong> Hub, Switch, or Router</li>
+  <li><strong>1</strong> Laptop/Desktop with an SD card slot</li>
+</ul>
+
+<p><img src="/images/raspi-parts.jpg" alt="Raspberry Pi Parts" /></p>
+
+<p>If you only have <strong>1</strong> Pi, you can still install Riak, but clearly not create a cluster. For the rest of this post, I’ll assume <strong>N=3</strong>.</p>
+
+<p>It may seem like a lot of parts. However, except for the RPis, you can find most of this stuff lying around RadioShack, or your local reclaimed electronics equipment store, fairly inexpensively.</p>
+
+<h2 id="installing-riak-on-raspberry-pi">Installing Riak on Raspberry Pi</h2>
+
+<h3 id="step-1-install-raspbi">Step 1: Install Raspbi</h3>
+
+<p>Get your laptop (or desktop) and insert your SD card, after you <a href="http://www.raspberrypi.org/downloads">download the Raspbian image</a> (the current release is “wheezy”).</p>
+
+<p>Unzip the download, and you should have an <code>img</code> file.</p>
+
+<p>You’ll need to unmount the (probably) default partition your SD card started with, then write the image to the device. There are several <a href="http://elinux.org/RPi_config.txt">detailed instructions</a> for many operating systems on elinux.</p>
+
+<p>I have a Mac running OSX, so I did the following. Be extra careful with the device names, or else you might just flash your hard drive if you get it wrong. <em>Warning: be very, very careful here.</em></p>
+
+<ol>
+  <li>
+    <p>Find the device name of the SD’s partition</p>
+
+    <p><code>bash
+df -h
+</code></p>
+  </li>
+  <li>
+    <p>unmount that partition</p>
+
+    <p><code>bash
+sudo diskutil unmount /dev/disk1s1
+</code></p>
+  </li>
+  <li>Get the actual device name (which is just the disk number, minus the s1, prefixed with <code>r</code>.
+In my case it was <code>/dev/rdisk1</code>.</li>
+  <li>
+    <p>The flag <code>if</code> is the input file, and <code>of</code> is the output device (the SD card)</p>
+
+    <p><code>bash
+sudo dd bs=1m if=~/Downloads/2012-08-16-wheezy-raspbian.img of=/dev/rdisk1
+</code></p>
+  </li>
+  <li>
+    <p>Eject the card</p>
+
+    <p><code>bash
+sudo diskutil eject /dev/rdisk1
+</code></p>
+  </li>
+</ol>
+
+<h3 id="step-2-plug-everything-in-so-it-looks-like-this">Step 2: Plug everything in so it looks like this</h3>
+
+<p>Plug your shiny new SD card into your RPi. In fact, why not just plug everything in? Plug the power in last, or you’ll be racing against the boot up process trying to connect devices.</p>
+
+<p>Simply plugging in the Pi will turn it on.</p>
+
+<p>It should look something like this super hip Instagram photo.</p>
+
+<p><img src="/images/raspi-single.jpg" alt="RPi Plugged In" /></p>
+
+<h3 id="step-3-boot-up-and-setup">Step 3: Boot up and setup</h3>
+
+<p>If everything booted up, you should see a <em>Blue Screen of Life</em>.</p>
+
+<p>The first task I recommend is configuring your keyboard. Since Raspberry Pi is from the UK, Raspbian is set up with UK defaults (which, as an American, this came as quite a shock since everything is usually set up for me <em>all the time</em>).</p>
+
+<p>The next thing you’ll want to do is expand the root partition to take up the full SD space. If you really wanted to make a production ready server you’d probably want to make a separate partition to store the Riak data… but if you wanted a production system you wouldn’t be installing on a Raspberry Pi anyway.</p>
+
+<p>If you like, try upgrading <code>raspi-config</code>. This isn’t necessary, but I like to keep current. You’ll certainly need an internet connection to do so.</p>
+
+<p>Then reboot. You can just unplug it. At this point I wouldn’t worry about file corruption. If the thought bothers you, you can run <code>sudo shutdown now</code>, then unplug.</p>
+
+<p>When the server restarts, just select “finish” if the config screen launches again.</p>
+
+<p><img src="/images/raspi-boot.jpg" alt="Raspbi Bootup" /></p>
+
+<h3 id="step-4-install-esl-erlang-r15b02-raspian">Step 4: Install <code>esl-erlang</code> (R15B02, Raspian)</h3>
+
+<p><em>At this point, get ready to start waiting. RPi isn’t exactly a big iron machine, and SD cards are not fast storage, so the combination can be maddeningly sluggish. You might want to have a book handy.</em></p>
+
+<p>Now that all of that housekeeping is out of the way, it’s time to get cracking on some Riak. The first thing you’ll need, however, is Erlang. Thankfully, the awesome <a href="http://www.erlang-solutions.com">Erlang Solutions</a> folks created a Raspbi distro, which was way easier than the first two weeks when I tried to create my own build. So unless you’re masochistic, I suggest using theirs.</p>
+
+<p>First, add the following line to your <code>/etc/apt/sources.list</code> file. Luckily, vi is installed.</p>
+
+<div class="highlight"><pre>sudo vi /etc/apt/sources.list
+deb http://binaries.erlang-solutions.com/debian wheezy contrib
+</pre>
+</div>
+
+<p>Then add the Erlang Solutions public key for <code>apt-secure</code>.</p>
+
+<div class="highlight"><pre>wget -O - http://binaries.erlang-solutions.com/debian/erlang_solutions.asc | sudo apt-key add -
+</pre>
+</div>
+
+<p>Update your <code>apt-get</code> package list, and then install <code>esl-erlang</code>.</p>
+
+<div class="highlight"><pre>sudo apt-get update
+sudo apt-get install esl-erlang
+</pre>
+</div>
+
+<p>Once erlang is installed, type <code>erl</code> to test. I found that I received a segfault unless I restarted once after install.</p>
+
+<p>If you are prompted for a password, the login/password is <code>pi</code>/<code>raspberry</code>.</p>
+
+<h3 id="step-5-install-riak-from-source">Step 5: Install Riak from Source</h3>
+
+<p>With Erlang installed, now we move onto Riak proper. First thing is to download and extract Riak 1.2.1.</p>
+
+<div class="highlight"><pre>curl -O http://downloads.basho.com.s3-website-us-east-1.amazonaws.com/riak/CURRENT/riak-1.2.1.tar.gz
+tar zxvf riak-1.2.1.tar.gz
+<span class="nb">cd </span>riak-1.2.1
+</pre>
+</div>
+
+<p>Before we can actually install Riak using Rebar, we’ll first need to install <code>git</code>. Rebar uses git to download Riak’s dependencies.</p>
+
+<div class="highlight"><pre>sudo apt-get install git
+</pre>
+</div>
+
+<p>With git in place, run make a release version and let Rebar do its stuff.</p>
+
+<div class="highlight"><pre>make rel
+</pre>
+</div>
+
+<p>Once your Riak release is installed, start up riak:</p>
+
+<div class="highlight"><pre>./rel/riak/bin/riak start
+</pre>
+</div>
+
+<p>You can test that it’s started and receiving requests by curling <code>/ping</code>.</p>
+
+<div class="highlight"><pre><span class="nv">$ </span>curl http://localhost:8098/ping
+OK
+
+<span class="nv">$ </span>curl -XPUT http://localhost:8098/riak/hello/fr -d <span class="s1">&#39;Allo&#39;</span>
+<span class="nv">$ </span>curl http://localhost:8098/riak/hello/fr
+Allo
+</pre>
+</div>
+
+<p>It’s worth nothing that the Raspberry Pi only has 256M of RAM. So feel free to tweak some of the default settings in <code>etc/app.config</code>.</p>
+
+<h3 id="step-6-rinse-and-repeat">Step 6: Rinse and Repeat</h3>
+
+<p>At this point you should have Riak installed on a Raspberry Pi. To install on the remaining two, you can either clone the SD card image to SD cards, or you can install Riak from scratch onto those cards following the instructions above. Copying SD images can be slow, so I couldn’t quite recommend one over the other.</p>
+
+<h2 id="build-a-cluster">Build a Cluster</h2>
+
+<p>Once you have three working cards, let’s network the Pis into a Riak cluster.</p>
+
+<p><img src="/images/raspi-cluster.jpg" alt="Raspbi Cluster" /></p>
+
+<h3 id="step-6-a-little-network">Step 6: A Little Network</h3>
+
+<p>Before tackling this part, I’d stop Riak. We’ll fire it up when our network is functional.</p>
+
+<p>You can plug your Pis into a router. They’re set up for DHCP by default so you should be good to go. You can largely skip this section.</p>
+
+<p>However, if you’re cheap like me, you can plug them into a switch or hub, and do a bit of configuration.</p>
+
+<p>Change the <code>/etc/network/interfaces</code> file to have the following settings:</p>
+
+<div class="highlight"><pre>auto eth0
+iface lo inet loopback
+iface eth0 inet static
+        address 192.168.10.10
+        netmask 255.255.255.0
+        network 192.168.10.0
+        broadcast 192.168.10.255
+</pre>
+</div>
+
+<p>Then restart the network.</p>
+
+<div class="highlight"><pre>sudo /etc/init.d/networking restart
+</pre>
+</div>
+
+<p>You should see your network lights flash off then on.</p>
+
+<p>If you run <code>ifconfig</code>, your <code>eth0</code> and <code>lo</code> values should be what you expect.</p>
+
+<p>If for some reason that didn’t work, try.</p>
+
+<div class="highlight"><pre>sudo ifconfig eth0 down
+sudo ifconfig eth0 up
+</pre>
+</div>
+
+<p>Then plug your keyboard and monitor into your other Pis, and repeat for the remaining two. But this time, give each card its own successive IP address (192.168.10.11, 192.168.10.12).</p>
+
+<p>You should now be able to ping the other cards.</p>
+
+<div class="highlight"><pre>ping 192.168.10.11
+</pre>
+</div>
+
+<p>The LNK lights on your cards should blink for each <code>ping</code>.</p>
+
+<p>There are more creative ways to configure a network, obviously, but this was fine for my three little cards.</p>
+
+<h3 id="step-7-make-riak-nodes">Step 7: Make Riak Nodes</h3>
+
+<p>Although each RPi has Riak installed, they are not configured with the new network settings which allow the Erlang VMs to communicate with each other.</p>
+
+<p>Change to your riak install directory (<code>$RIAK_HOME/rel/riak</code>).</p>
+
+<div class="highlight"><pre>vi etc/vm.args
+</pre>
+</div>
+
+<p>Replace all 127.0.0.1 with 192.168.10.10, or whichever your Pi’s IP.</p>
+
+<div class="highlight"><pre>vi etc/app.config
+</pre>
+</div>
+
+<p>Replace all 127.0.0.1 with 192.168.10.10/11/12.</p>
+
+<p>Start riak with <code>bin/riak start</code> and check that it’s running with <code>/bin/riak pong</code>. If you have trouble getting Riak to start, you may have better luck by deleting your data directory.</p>
+
+<h3 id="step-8-cluster-time">Step 8: Cluster Time</h3>
+
+<p>Now each of your RPis is an official Riak node. It’s time to build a cluster!</p>
+
+<p>Whatever RPi node you happen to be connected to, choose the two other nodes to join. Since I’m connected to <code>192.168.10.12</code>, I typed the following:</p>
+
+<div class="highlight"><pre>./bin/riak-admin cluster join riak@192.168.10.10
+./bin/riak-admin cluster join riak@192.168.10.11
+
+./bin/riak-admin plan
+./bin/riak-admin commit
+./bin/riak-admin 
+</pre>
+</div>
+
+<p>You can see what percentage of the ring each node has by typing, which will give you a (not exactly evenly) divided 33% for each.</p>
+
+<div class="highlight"><pre>./bin/riak-admin member-status
+</pre>
+</div>
+
+<p>That’s it. Now you can throw some commands at one of the nodes, and the value should be available from any other node. Go ahead and try it.</p>
+
+<p>I posted a value to the druplets buckets (a druplet is the little nodule on a raspberry), then listed the keys from a different IP.</p>
+
+<div class="highlight"><pre>curl -XPOST http://192.168.10.10:8098/riak/druplets -d <span class="s1">&#39;YUM&#39;</span>
+curl http://192.168.10.12:8098/riak/druplets?keys<span class="o">=</span><span class="nb">true</span> | json_pp
+</pre>
+</div>
+
+<p>You should expect the new key to be added. If you’d like to see my results in bad home-movie form, the video is below.</p>
+
+<iframe width="560" height="315" src="http://www.youtube.com/embed/tyqOyz750eA" frameborder="0" allowfullscreen=""></iframe>
+
+<p>Note that cluster isn’t fit for any purpose in its current form. If I were serious about a production Pi cluster, I’d connect a better drive than an SD card (which could be anything), I’d certainly alter the <code>app.config</code> setting, and probably some other customer hacks, like removing JavaScript entirely.</p>
+
+<p>I’d love to hear what you do with this.</p>
+
+<p><a href="http://twitter.com/coderoshi">Eric Redmond</a></p>
+
+
+
+<script type="text/javascript"> var disqus_url = "http://basho.com/blog/technical/2012/11/01/rasp-pi-cluster/";</script>
+
+<div id="disqus_thread"></div>
+<script type="text/javascript" src="http://disqus.com/forums/thebashoblog/embed.js"></script>
+<noscript>
+  <a href="http://disqus.com/forums/thebashoblog/?url=ref">
+    View the discussion thread.
+  </a>
+</noscript>
+<a href="http://disqus.com" class="dsq-brlink">
+  blog comments powered by <span class="logo-disqus">Disqus</span>
+</a>
+
+
+          </div>
+        </div>
+      </div>
+      
+      <div class="cb"></div>
+
+    </div>
+  </div>
+
+  <div class="greenblock">
+    <div class="top-green-shadow block shadow-bird-fix"></div>
+        <div id="tweetbox">
+      <table id="innertweetbox">
+        <tbody>
+          <tr>
+            <td><a title="Follow Basho Technologies on Twitter" id="follow-us" href="http://www.twitter.com/basho"></a></td>
+            <td><div id="tweet"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bottom-green-shadow block"></div>
+  </div>
+
+  <div id="footer-widgets" class="col-full col-4">
+    <div class="block footer-widget-1">
+      <div id="nav_menu-3" class="widget widget_nav_menu">
+        <h3>Products</h3>
+        <div class="menu-products-container">
+          <ul id="menu-products-1" class="menu">
+            <li class=""><a title="Riak Overview" href="/products/riak-overview/">Riak Overview</a></li>
+            <li class=""><a title="Riak Enterprise" href="/products/riak-enterprise/">Riak Enterprise DS</a></li>
+            <li class=""><a title="Riak Enterprise for Startups" href="/products/riak-enterprise-for-startups/">Riak EDS for Startups</a></li>
+            <li class=""><a title="Riak CS" href="/products/riakcs/">Riak CS</a></li>
+            <li class=""><a title="Riak Control" href="/products/riak-control/">Riak Control</a></li>
+            <li class=""><a title="Riak Downloads" href="/resources/downloads/">Downloads</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="block footer-widget-2">
+      <div id="nav_menu-20" class="widget widget_nav_menu">
+        <h3>Technology</h3>
+        <div class="menu-technology-container">
+          <ul id="menu-technology" class="menu">
+            <li class=""><a title="Why use Riak?" href="/technology/why-use-riak/">Why Use Riak?</a></li>
+            <li class=""><a title="Riak Architecture" href="/technology/architecture/">Architecture</a></li>
+            <li class=""><a title="Riak Technology Stack" href="/technology/technology-stack/">Technology Stack</a></li>
+            <li class=""><a title="Riak Quick Reference" href="/technology/quick-reference/">Quick Reference</a></li>
+            <li class=""><a title="Riak Documentation" href="http://docs.basho.com">Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="block footer-widget-3">
+      <div id="nav_menu-4" class="widget widget_nav_menu">
+        <h3>Resources</h3>
+        <div class="menu-resources-container">
+          <ul id="menu-resources" class="menu">
+            <li class=""><a title="Riak Downloads" href="/resources/downloads/">Downloads</a></li>
+            <li class=""><a title="Riak Case Studies" href="/resources/case-studies/">Case Studies</a></li>
+            <li class=""><a title="Riak Data Sheets" href="/resources/data-sheets/">Data Sheets</a></li>
+            <li class=""><a title="Riak White Papers" href="/resources/white-papers/">White Papers</a></li>
+            <li class=""><a title="Riak Videos" href="/resources/videos/">Videos</a></li>
+            <li class=""><a title="Riak Presentations" href="/resources/presentations/">Presentations</a></li>
+            <li class=""><a title="Riak Documentation" href="http://docs.basho.com">Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="block footer-widget-4">
+      <div id="nav_menu-5" class="widget widget_nav_menu">
+        <h3>Company</h3>
+        <div class="menu-company-container">
+          <ul id="menu-company" class="menu">
+            <li class=""><a title="About Basho Technologies" href="/company/about-basho/">About Basho</a></li>
+            <li class=""><a title="Riak in Production" href="/company/production-users/">Production Users</a></li>
+            <li class=""><a title="Management Team" href="/company/management/">Management</a></li>
+            <li class=""><a title="Basho Team" href="/company/team/">Team</a></li>
+            <li class=""><a title="Basho Board" href="/company/board/">Board</a></li>
+            <li class=""><a title="Latest News" href="/news">News</a></li>
+            <li class=""><a title="Basho Careers" href="http://bashojobs.theresumator.com/">Careers</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="cb"></div>
+
+  </div>
+
+
+</div><!-- /#wrapper -->
+
+<div id="footer">
+  <div id="infooter">
+
+    <div class="minilogo fl"><img src="/images/newfooter-logo.png" alt="Basho Technologies" /></div>
+    
+    <div class="offices fl">
+      <span class="gothic-bold">Our Offices - </span><a title="Contact Basho Technologies" href="/contact/">Contact Us</a>
+      <table id="offices-table">
+        <tr>
+          <td>
+            <ul>
+              <li><span class="gothic-bold">USA</span> - Cambridge, MA</li>
+              <li><span class="gothic-bold">USA</span> - San Francisco, CA</li>
+              <li><span class="gothic-bold">USA</span> - Washington, D.C.</li>
+            </ul>
+          </td>
+          <td>
+              <li><span class="gothic-bold">UK</span> - London, England</li>
+              <li><span class="gothic-bold">JP</span> - Tokyo, Japan</li>
+            </ul>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="copyright fl last">
+      <span class="gothic-bold">Copyright &copy; 2012</span> - <a title="Basho Terms and Conditions" href="/legal/terms-and-conditions">Terms &amp; Conditions</a><br/>
+      Basho Technologies, Inc.<br/>
+      All rights reserved.
+    </div>
+
+    <div class="cb last"></div>
+
+  </div>
+</div>
+
+<script src='/javascripts/jquery.js'></script>
+<script src='/javascripts/jquery.fancybox.js'></script>
+<script src='/javascripts/jquery.bxSlider.min.js'></script>
+<script src='/javascripts/general.js'></script>
+<script src='/javascripts/communityajax.js'></script>
+<script src='/javascripts/downloadsajax.js'></script>
+
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-10051263-5']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+<script type="text/javascript"> document.write('<scr'+'ipt type="text/javascript" src="' + document.location.protocol + '//munchkin.marketo.net/munchkin.js"><\/scr'+'ipt>');</script>
+<script>mktoMunchkin("721-DGT-611");</script>
+
+<script type="text/javascript">
+setTimeout(function(){var a=document.createElement("script");
+var b=document.getElementsByTagName('script')[0];
+a.src=document.location.protocol+"//dnn506yrbagrg.cloudfront.net/pages/scripts/0011/8397.js";
+a.async=true;a.type="text/javascript";b.parentNode.insertBefore(a,b)}, 1);
+</script>
+
+
+<script type="text/javascript" src="//clipboard.com/js/bookmarklet_boot.js?origin=embed"></script>
+
+</body>
+</html>
